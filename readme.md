@@ -7,6 +7,7 @@ It takes a small text dataset, augments it using synonym replacement, embeds bot
 
 ## Project Structure
 
+```
 SemanticAugmentor-ConjuringAaugmentation/
 │
 ├── data/
@@ -23,7 +24,7 @@ SemanticAugmentor-ConjuringAaugmentation/
 │
 ├── requirements.txt
 └── README.md
-
+```
 
 ---
 
@@ -125,8 +126,11 @@ curl -X POST "http://127.0.0.1:8000/search" \
 
 ### Author
 Heba Abdelhadi
+
 AI Application Developer & Data Scientist
+
 habdelhadi08@gmail.com
+
 Shelby Township, MI
 
 
