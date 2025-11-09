@@ -1,7 +1,7 @@
 # Conjuring Augmentation
 
-This project implements a **text augmentation and semantic search pipeline** using **FastAPI**, **FAISS**, and **SentenceTransformers**.  
-It takes a small text dataset, augments it using synonym replacement, embeds both original and augmented data, indexes them in a FAISS vector store, and exposes a simple API for semantic search.
+This project implements a text augmentation and semantic search pipeline using FastAPI, FAISS, and SentenceTransformers.
+It takes a small text dataset, augments it using synonym replacement and random insertion, embeds both original and augmented data, indexes them in a FAISS vector store, and exposes a simple API for semantic search.
 
 ---
 
@@ -21,7 +21,7 @@ SemanticAugmentor-ConjuringAaugmentation/
 │ ├── app.py # FastAPI semantic search API
 │ ├── augment.py # Text augmentation script
 │ ├── embed_index.py # Full pipeline: embeddings + FAISS index
-│
+│── config.yaml
 ├── requirements.txt
 └── README.md
 ```
@@ -90,10 +90,13 @@ http://127.0.0.1:8000
 
 ### API Endpoints
 
-| Endpoint  | Method | Description             |
-| --------- | ------ | ----------------------- |
-| `/`       | GET    | Root message            |
-| `/search` | POST   | Perform semantic search |
+| Endpoint   | Method | Description             |
+| ---------- | ------ | ----------------------- |
+| `/`        | GET    | Root message            |
+| `/augment` | POST   | Run text augmentation   |
+| `/index`   | POST   | Build FAISS index       |
+| `/search`  | POST   | Perform semantic search |
+
 
 #### Example Request
 
@@ -105,14 +108,39 @@ curl -X POST "http://127.0.0.1:8000/search" \
 
 #### Example Response:
 
-{"query":"What is machine learning?","results":[
-    {"id":1,"text":"Machine learning is not just about algorithms","augmented":false,"similarity":-29.568674087524414},{"id":3,"text":"Data preprocessing live all important for exemplar performance","augmented":true,"similarity":-32.94023132324219},{"id":2,"text":"Data is crucial for training machine learning models","augmented":false,"similarity":-34.68223571777344},{"id":3,"text":"Data preprocessing is essential for model performance","augmented":false,"similarity":-36.97655487060547},{"id":1,"text":"Machine encyclopedism is non just about algorithm","augmented":true,"similarity":-38.00421905517578}]}
+"query": "What is machine learning?",
+  "results": [
+    {
+      "id": 2,
+      "text": "Data is crucial training for learning machine models",
+      "transform_type": "random_swap",
+      "params": "{'aug_p': 0.2}",
+      "timestamp": "2025-11-08T22:16:36.111593",
+      "similarity": 0.6343032121658325
+    },
+    {
+      "id": 1,
+      "text": "Learning machine is just not about algorithms",
+      "transform_type": "random_swap",
+      "params": "{'aug_p': 0.2}",
+      "timestamp": "2025-11-08T22:16:35.928304",
+      "similarity": 0.5823814868927002
+    },
+    {
+      "id": 1,
+      "text": "Machine learning follow not only astir algorithms",
+      "transform_type": "synonym_replacement",
+      "params": "{'aug_p': 0.3}",
+      "timestamp": "2025-11-08T22:16:35.928304",
+      "similarity": 0.5717523097991943
+    }],
+   
 
 
 ## Evaluation Notes
 - Compared retrieval performance between original and augmented data.
 
-- Observation: Synonym-based augmentation improves search recall for paraphrased queries.
+- Observation: Synonym and random swap augmentation improve search recall for paraphrased queries.
 
 ## Key Features
 
