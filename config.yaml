@@ -1,17 +1,11 @@
 # -----------------------------
 # Augmentation settings
 # -----------------------------
-# -----------------------------
-# Augmentation settings
-# -----------------------------
 augmentation:
   synonym:
-    aug_p: 0.3                # Probability for synonym replacement
-  random_insertion:
-    aug_p: 0.2                # Probability for random word insertion
+    aug_p: 0.3          # Probability for synonym replacement
   random_swap:
-    aug_p: 0.2                # Probability for random word swap
-
+    aug_p: 0.2          # Probability for random word swap
 
 # -----------------------------
 # Embedding model
@@ -32,12 +26,11 @@ faiss:
 data:
   input_csv: "data/text.csv"
   augmented_csv: "data/augmented_text.csv"
-  embedded_csv: "data/augmented_text_with_embeddings.csv"
 
 # -----------------------------
 # Experiment parameters
 # -----------------------------
 experiment:
-  top_k: 5                  # Number of results to return in search
-  random_seed: 42           # Optional seed for reproducibility
+  top_k: 5
+  random_seed: 42
 

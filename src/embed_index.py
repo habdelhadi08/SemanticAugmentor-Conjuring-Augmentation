@@ -1,4 +1,5 @@
 # embed_index.py
+
 import pandas as pd
 import numpy as np
 import nlpaug.augmenter.word as naw
@@ -16,10 +17,10 @@ import nltk
 with open('config.yaml', 'r') as f:
     config = yaml.safe_load(f)
 
-# Paths
+# File paths
 INPUT_CSV = config['data']['input_csv']
 AUG_CSV = config['data']['augmented_csv']
-EMBED_CSV = config['data']['embedded_csv']
+EMBED_CSV = config['data']['augmented_csv']  
 FAISS_INDEX_FILE = config['faiss']['index_file']
 METADATA_FILE = config['faiss']['metadata_file']
 
@@ -28,7 +29,7 @@ EMBED_MODEL = config['embedding']['model_name']
 
 # Augmentation probabilities
 SYN_PROB = config['augmentation']['synonym']['aug_p']
-RI_PROB = config['augmentation']['random_insertion']['aug_p']
+SWAP_PROB = config['augmentation']['random_swap']['aug_p']
 
 # Random seed
 SEED = config['experiment'].get('random_seed', 42)
@@ -57,9 +58,9 @@ def augment_synonym(text):
     aug = naw.SynonymAug(aug_src='wordnet', aug_p=SYN_PROB)
     return aug.augment(text), 'synonym', {'aug_p': SYN_PROB}
 
-def augment_random_insertion(text):
-    aug = naw.RandomWordAug(action="insert", aug_p=RI_PROB)
-    return aug.augment(text), 'random_insertion', {'aug_p': RI_PROB}
+def augment_random_swap(text):
+    aug = naw.RandomWordAug(action="swap", aug_p=SWAP_PROB)
+    return aug.augment(text), 'random_swap', {'aug_p': SWAP_PROB}
 
 # -----------------------------
 # 5️⃣ Apply augmentations
@@ -81,11 +82,11 @@ for idx, row in df.iterrows():
         'timestamp': datetime.utcnow().isoformat()
     })
 
-    # Random insertion
-    ri_text, t_type, params = augment_random_insertion(original_text)
+    # Random swap
+    swap_text, t_type, params = augment_random_swap(original_text)
     augmented_data.append({
         'id': source_id,
-        'text': ri_text,
+        'text': swap_text,
         'augmented': True,
         'transform_type': t_type,
         'params': params,
@@ -103,27 +104,26 @@ print(f"Augmented data saved: {AUG_CSV}")
 model = SentenceTransformer(EMBED_MODEL)
 
 def compute_embeddings_batch(texts, batch_size=32):
-    embeddings = model.encode(texts, batch_size=batch_size, show_progress_bar=True)
-    return embeddings
+    return model.encode(texts, batch_size=batch_size, show_progress_bar=True)
 
 texts = df_aug['text'].tolist()
 embeddings = compute_embeddings_batch(texts)
 df_aug['embedding'] = embeddings.tolist()
+
 df_aug.to_csv(EMBED_CSV, index=False)
-print(f"Embeddings saved: {EMBED_CSV}")
+print(f"Embeddings saved with augmented text: {EMBED_CSV}")
 
 # -----------------------------
 # 7️⃣ Build FAISS index
 # -----------------------------
 embedding_dim = embeddings.shape[1]
-index = faiss.IndexFlatL2(embedding_dim)
-
-# Optional: normalize embeddings if you want cosine similarity
-# faiss.normalize_L2(embeddings)
-
 all_embeddings = np.array(embeddings).astype('float32')
+
+faiss.normalize_L2(all_embeddings)
+index = faiss.IndexFlatIP(embedding_dim)
 index.add(all_embeddings)
-print(f"FAISS index with {index.ntotal} vectors created.")
+
+print(f"FAISS index created with {index.ntotal} vectors.")
 
 # Save FAISS index & metadata
 faiss.write_index(index, FAISS_INDEX_FILE)
@@ -132,6 +132,6 @@ with open(METADATA_FILE, 'wb') as f:
 
 print(f"FAISS index saved: {FAISS_INDEX_FILE}")
 print(f"Metadata saved: {METADATA_FILE}")
-print("Pipeline completed: augmentation → embeddings → FAISS index ready!")
+print("Pipeline completed successfully! 🎉")
 
 

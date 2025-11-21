@@ -108,32 +108,53 @@ curl -X POST "http://127.0.0.1:8000/search" \
 
 #### Example Response:
 
-"query": "What is machine learning?",
+ body
+Download
+{
+  "query": "What is machine learning?",
   "results": [
     {
+      "id": 1,
+      "text": "Machine learning is not just about algorithms",
+      "transform_type": "random_swap",
+      "params": "{'aug_p': 0.2}",
+      "timestamp": "2025-11-21T15:48:14.738508",
+      "similarity": 0.7713919281959534
+    },
+    {
       "id": 2,
-      "text": "Data is crucial training for learning machine models",
+      "text": "Data crucial is for machine training learning models",
       "transform_type": "random_swap",
       "params": "{'aug_p': 0.2}",
-      "timestamp": "2025-11-08T22:16:36.111593",
-      "similarity": 0.6343032121658325
+      "timestamp": "2025-11-21T15:48:14.782004",
+      "similarity": 0.6956778168678284
     },
     {
-      "id": 1,
-      "text": "Learning machine is just not about algorithms",
-      "transform_type": "random_swap",
-      "params": "{'aug_p': 0.2}",
-      "timestamp": "2025-11-08T22:16:35.928304",
-      "similarity": 0.5823814868927002
-    },
-    {
-      "id": 1,
-      "text": "Machine learning follow not only astir algorithms",
+      "id": 2,
+      "text": "Data be crucial for take machine learning models",
       "transform_type": "synonym_replacement",
       "params": "{'aug_p': 0.3}",
-      "timestamp": "2025-11-08T22:16:35.928304",
-      "similarity": 0.5717523097991943
-    }],
+      "timestamp": "2025-11-21T15:48:14.782004",
+      "similarity": 0.6451414823532104
+    },
+    {
+      "id": 1,
+      "text": "Machine acquisition is not just astir algorithm",
+      "transform_type": "synonym_replacement",
+      "params": "{'aug_p': 0.3}",
+      "timestamp": "2025-11-21T15:48:14.738508",
+      "similarity": 0.5486204624176025
+    },
+    {
+      "id": 3,
+      "text": "Data preprocessing is essential for model operation",
+      "transform_type": "synonym_replacement",
+      "params": "{'aug_p': 0.3}",
+      "timestamp": "2025-11-21T15:48:14.782004",
+      "similarity": 0.3149666488170624
+    }
+  ]
+}
    
 
 
@@ -141,6 +162,30 @@ curl -X POST "http://127.0.0.1:8000/search" \
 - Compared retrieval performance between original and augmented data.
 
 - Observation: Synonym and random swap augmentation improve search recall for paraphrased queries.
+
+## Evaluation Results
+
+Below are the semantic search evaluation results from running evaluate.py using augmented data (synonym replacement + random swap):
+
+| Query                                           | Top 1 Result (Method)                                                     | Sim    | Top 2 Result (Method)                                                                         | Sim    | Top 3 Result (Method)                                                                         | Sim    |
+| ----------------------------------------------- | ------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------- | ------ |
+| **Why is data preprocessing important?**        | Preprocessing data is essential model for performance *(random_swap)*     | 0.7634 | Information preprocessing make up all important for model performance *(synonym_replacement)* | 0.6565 | Data is crucial training for learning machine models *(random_swap)*                          | 0.4448 |
+| **What improves machine learning performance?** | Machine learning follow not only astir algorithms *(synonym_replacement)* | 0.6218 | Data is crucial training for learning machine models *(random_swap)*                          | 0.6202 | Information preprocessing make up all important for model performance *(synonym_replacement)* | 0.4843 |
+| **Why is data crucial for training models?**    | Data is crucial training for learning machine models *(random_swap)*      | 0.8329 | Data is essential for train automobile learning models *(synonym_replacement)*                | 0.6031 | Information preprocessing make up all important for model performance *(synonym_replacement)* | 0.5584 |
+| **Is machine learning only about algorithms?**  | Learning machine is just not about algorithms *(random_swap)*             | 0.8052 | Machine learning follow not only astir algorithms *(synonym_replacement)*                     | 0.7060 | Data is crucial training for learning machine models *(random_swap)*                          | 0.5188 |
+| **What do ML models need for good results?**    | Data is crucial training for learning machine models *(random_swap)*      | 0.5546 | Information preprocessing make up all important for model performance *(synonym_replacement)* | 0.4844 | Preprocessing data is essential model for performance *(random_swap)*                         | 0.4403 |
+
+## Interpretation
+
+- Augmented data significantly improves the similarity scores.
+
+- Synonym replacement + random swap produce strong agreement with paraphrased queries.
+
+- Even when queries are phrased differently, top-1 and top-3 results remain relevant.
+
+- Random swap often produces the highest similarity on data-centric queries.
+
+- Augmentation increases robustness and semantic recall compared to baseline text.
 
 ## Key Features
 

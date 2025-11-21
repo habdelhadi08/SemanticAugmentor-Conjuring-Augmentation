@@ -1,4 +1,3 @@
-# augment.py
 import pandas as pd
 import nlpaug.augmenter.word as naw
 import nltk
@@ -11,9 +10,8 @@ import yaml
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
-syn_aug_p = config['augmentation']['synonym']['aug_p']
-ins_aug_p = config['augmentation'].get('insertion', {}).get('aug_p', 0.1)
-del_aug_p = config['augmentation'].get('deletion', {}).get('aug_p', 0.1)
+SYN_PROB = config['augmentation']['synonym']['aug_p']
+RS_PROB = config['augmentation'].get('random_swap', {}).get('aug_p', 0.2)
 
 INPUT_CSV = config['data']['input_csv']
 AUG_CSV = config['data']['augmented_csv']
@@ -29,13 +27,22 @@ nltk.download('averaged_perceptron_tagger')
 # Load CSV file
 # -----------------------------
 df = pd.read_csv(INPUT_CSV)
+if df.empty:
+    raise ValueError(f"{INPUT_CSV} is empty or missing.")
+print(f"Original data loaded: {len(df)} rows")
 
 # -----------------------------
-# Initialize augmenters
+# Define augmentation functions
 # -----------------------------
-syn_aug = naw.SynonymAug(aug_src='wordnet', aug_p=syn_aug_p)
-ins_aug = naw.ContextualWordEmbsAug(model_path='bert-base-uncased', action='insert', aug_p=ins_aug_p)
-del_aug = naw.RandomWordAug(action='delete', aug_p=del_aug_p)
+def augment_synonym(text):
+    aug = naw.SynonymAug(aug_src='wordnet', aug_p=SYN_PROB)
+    aug_text = aug.augment(text)
+    return aug_text, 'synonym_replacement', {'aug_p': SYN_PROB}, datetime.utcnow().isoformat()
+
+def augment_random_swap(text):
+    aug = naw.RandomWordAug(action="swap", aug_p=RS_PROB)
+    aug_text = aug.augment(text)
+    return aug_text, 'random_swap', {'aug_p': RS_PROB}, datetime.utcnow().isoformat()
 
 # -----------------------------
 # Apply augmentations
@@ -44,38 +51,30 @@ augmented_rows = []
 
 for idx, row in df.iterrows():
     original_text = row['text']
+    source_id = row['id']
 
     # Synonym replacement
-    syn_text = syn_aug.augment(original_text)
+    syn_text, t_type, params, ts = augment_synonym(original_text)
     augmented_rows.append({
-        "source_id": row['id'],
+        "source_id": source_id,
         "original_text": original_text,
         "augmented_text": syn_text,
-        "transform_type": "synonym_replacement",
-        "params": {"aug_p": syn_aug_p},
-        "timestamp": datetime.utcnow().isoformat()
+        "transform_type": t_type,
+        "params": params,
+        "timestamp": ts,
+        "augmented": True
     })
 
-    # Random insertion
-    ins_text = ins_aug.augment(original_text)
+    # Random swap
+    rs_text, t_type, params, ts = augment_random_swap(original_text)
     augmented_rows.append({
-        "source_id": row['id'],
+        "source_id": source_id,
         "original_text": original_text,
-        "augmented_text": ins_text,
-        "transform_type": "random_insertion",
-        "params": {"aug_p": ins_aug_p},
-        "timestamp": datetime.utcnow().isoformat()
-    })
-
-    # Random deletion
-    del_text = del_aug.augment(original_text)
-    augmented_rows.append({
-        "source_id": row['id'],
-        "original_text": original_text,
-        "augmented_text": del_text,
-        "transform_type": "random_deletion",
-        "params": {"aug_p": del_aug_p},
-        "timestamp": datetime.utcnow().isoformat()
+        "augmented_text": rs_text,
+        "transform_type": t_type,
+        "params": params,
+        "timestamp": ts,
+        "augmented": True
     })
 
 # -----------------------------
@@ -84,4 +83,5 @@ for idx, row in df.iterrows():
 aug_df = pd.DataFrame(augmented_rows)
 aug_df.to_csv(AUG_CSV, index=False)
 print(f"✅ Augmented data saved with metadata to '{AUG_CSV}'")
+
 

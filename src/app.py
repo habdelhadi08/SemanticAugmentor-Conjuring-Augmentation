@@ -24,7 +24,7 @@ TOP_K_DEFAULT = config['experiment']['top_k']
 
 INPUT_CSV = config['data']['input_csv']
 AUG_CSV = config['data']['augmented_csv']
-EMBED_CSV = config['data']['embedded_csv']
+EMBED_CSV = config['data']['augmented_csv']  
 
 # ---------------------------
 # FastAPI setup
