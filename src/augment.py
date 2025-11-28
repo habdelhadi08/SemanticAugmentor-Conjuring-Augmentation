@@ -1,7 +1,7 @@
 import pandas as pd
 import nlpaug.augmenter.word as naw
 import nltk
-from datetime import datetime
+from datetime import datetime, timezone
 import yaml
 
 # -----------------------------
@@ -37,12 +37,17 @@ print(f"Original data loaded: {len(df)} rows")
 def augment_synonym(text):
     aug = naw.SynonymAug(aug_src='wordnet', aug_p=SYN_PROB)
     aug_text = aug.augment(text)
-    return aug_text, 'synonym_replacement', {'aug_p': SYN_PROB}, datetime.utcnow().isoformat()
+    if isinstance(aug_text, list):  # nlpaug sometimes returns a list
+        aug_text = aug_text[0]
+    return aug_text, 'synonym_replacement', {'aug_p': SYN_PROB}, datetime.now(timezone.utc).isoformat()
+
 
 def augment_random_swap(text):
     aug = naw.RandomWordAug(action="swap", aug_p=RS_PROB)
     aug_text = aug.augment(text)
-    return aug_text, 'random_swap', {'aug_p': RS_PROB}, datetime.utcnow().isoformat()
+    if isinstance(aug_text, list):
+        aug_text = aug_text[0]
+    return aug_text, 'random_swap', {'aug_p': RS_PROB}, datetime.now(timezone.utc).isoformat()
 
 # -----------------------------
 # Apply augmentations
@@ -83,5 +88,6 @@ for idx, row in df.iterrows():
 aug_df = pd.DataFrame(augmented_rows)
 aug_df.to_csv(AUG_CSV, index=False)
 print(f"✅ Augmented data saved with metadata to '{AUG_CSV}'")
+
 
 

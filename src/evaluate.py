@@ -1,9 +1,10 @@
+# evaluate.py
+from datetime import datetime, timezone
 import faiss
 import pickle
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import yaml
-from datetime import datetime
 
 # ---------------------------
 # Load config
@@ -16,12 +17,13 @@ FAISS_INDEX_FILE = config['faiss']['index_file']
 METADATA_FILE = config['faiss']['metadata_file']
 TOP_K = config['experiment']['top_k']
 
+# ---------------------------
 # Load model once
+# ---------------------------
 model = SentenceTransformer(EMBED_MODEL)
 
-
 # ---------------------------
-# Normalize vectors (same as app.py)
+# Helper functions
 # ---------------------------
 def normalize_vector(vec):
     vec = np.array(vec).astype("float32")
@@ -30,57 +32,54 @@ def normalize_vector(vec):
         vec = vec / norm
     return vec
 
-
-# ---------------------------
-# Compute embedding
-# ---------------------------
 def compute_embedding(text):
     vec = model.encode(text)
     return normalize_vector(vec)
 
-
 # ---------------------------
-# Evaluate Query
+# Evaluate query
 # ---------------------------
 def evaluate(query: str, top_k: int = TOP_K):
-    print(f"\n=== EVALUATION RUN @ {datetime.utcnow().isoformat()} ===")
+    print(f"\n=== EVALUATION RUN @ {datetime.now(timezone.utc).isoformat()} ===")
     print(f"Query: {query}")
 
-    # Load FAISS + metadata
+    # Load FAISS index & metadata
     index = faiss.read_index(FAISS_INDEX_FILE)
     with open(METADATA_FILE, "rb") as f:
         metadata = pickle.load(f)
 
+    # Compute query embedding
     query_vec = compute_embedding(query).reshape(1, -1)
-
     distances, indices = index.search(query_vec, top_k)
 
     results = []
     for idx, sim in zip(indices[0], distances[0]):
         entry = metadata[idx]
         results.append({
-            "id": entry["source_id"],
-            "text": entry["augmented_text"],
+            "id": entry["source_id"],           # matches app.py / indexing
+            "text": entry["augmented_text"],    # matches app.py / indexing
             "transform_type": entry["transform_type"],
+            "params": entry.get("params", {}),
+            "timestamp": entry.get("timestamp", None),
             "similarity": float(sim),
         })
 
+    # Print top results
     print("\nTop Retrieved:")
     for r in results:
         print(f"- [{r['transform_type']}] (sim={r['similarity']:.4f}) : {r['text']}")
-
     return results
 
-
 # ---------------------------
-# Script example
+# Example queries
 # ---------------------------
 if __name__ == "__main__":
-    test_query = TEST_QUERIES = [
-    "Why is data preprocessing important?",
-    "What improves machine learning performance?",
-    "Why is data crucial for training models?",
-    "Is machine learning only about algorithms?",
-    "What do ML models need for good results?"]
-    for test_query in TEST_QUERIES:
-        evaluate(test_query)
+    TEST_QUERIES = [
+        "Why is data preprocessing important?",
+        "What improves machine learning performance?",
+        "Why is data crucial for training models?",
+        "Is machine learning only about algorithms?",
+        "What do ML models need for good results?"
+    ]
+    for query in TEST_QUERIES:
+        evaluate(query)

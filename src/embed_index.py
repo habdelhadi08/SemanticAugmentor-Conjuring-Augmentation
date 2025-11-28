@@ -6,7 +6,7 @@ import nlpaug.augmenter.word as naw
 from sentence_transformers import SentenceTransformer
 import faiss
 import pickle
-from datetime import datetime
+from datetime import datetime, timezone
 import yaml
 import random
 import nltk
@@ -20,7 +20,7 @@ with open('config.yaml', 'r') as f:
 # File paths
 INPUT_CSV = config['data']['input_csv']
 AUG_CSV = config['data']['augmented_csv']
-EMBED_CSV = config['data']['augmented_csv']  
+EMBED_CSV = config['data']['augmented_csv']
 FAISS_INDEX_FILE = config['faiss']['index_file']
 METADATA_FILE = config['faiss']['metadata_file']
 
@@ -56,11 +56,17 @@ print(f"Original data loaded: {len(df)} rows")
 # -----------------------------
 def augment_synonym(text):
     aug = naw.SynonymAug(aug_src='wordnet', aug_p=SYN_PROB)
-    return aug.augment(text), 'synonym', {'aug_p': SYN_PROB}
+    aug_text = aug.augment(text)
+    if isinstance(aug_text, list):
+        aug_text = aug_text[0]
+    return aug_text, 'synonym', {'aug_p': SYN_PROB}
 
 def augment_random_swap(text):
     aug = naw.RandomWordAug(action="swap", aug_p=SWAP_PROB)
-    return aug.augment(text), 'random_swap', {'aug_p': SWAP_PROB}
+    aug_text = aug.augment(text)
+    if isinstance(aug_text, list):
+        aug_text = aug_text[0]
+    return aug_text, 'random_swap', {'aug_p': SWAP_PROB}
 
 # -----------------------------
 # 5️⃣ Apply augmentations
@@ -79,7 +85,7 @@ for idx, row in df.iterrows():
         'augmented': True,
         'transform_type': t_type,
         'params': params,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     })
 
     # Random swap
@@ -90,7 +96,7 @@ for idx, row in df.iterrows():
         'augmented': True,
         'transform_type': t_type,
         'params': params,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     })
 
 # Save augmented CSV
@@ -109,7 +115,6 @@ def compute_embeddings_batch(texts, batch_size=32):
 texts = df_aug['text'].tolist()
 embeddings = compute_embeddings_batch(texts)
 df_aug['embedding'] = embeddings.tolist()
-
 df_aug.to_csv(EMBED_CSV, index=False)
 print(f"Embeddings saved with augmented text: {EMBED_CSV}")
 
@@ -119,6 +124,7 @@ print(f"Embeddings saved with augmented text: {EMBED_CSV}")
 embedding_dim = embeddings.shape[1]
 all_embeddings = np.array(embeddings).astype('float32')
 
+# Normalize for cosine similarity
 faiss.normalize_L2(all_embeddings)
 index = faiss.IndexFlatIP(embedding_dim)
 index.add(all_embeddings)
@@ -133,5 +139,3 @@ with open(METADATA_FILE, 'wb') as f:
 print(f"FAISS index saved: {FAISS_INDEX_FILE}")
 print(f"Metadata saved: {METADATA_FILE}")
 print("Pipeline completed successfully! 🎉")
-
-
